@@ -116,7 +116,7 @@ task usercontrol()
 	int forward;
 	int strafe;
 	bool isRotationPressed;
-	bool clockwise;
+	int rotation;
 
 	int deadzoneOuter = 127;
 	int deadzoneInner = 30;
@@ -130,17 +130,17 @@ task usercontrol()
 			motor[rightLiftMotor]= -127;
 			motor[ErightLiftMotor] = -127;
 
-			motor[rightClaw] = -1;
-			motor[leftClaw] = 1;
+			motor[rightClaw] = -35;
+			motor[leftClaw] = 35;
 		}
 		else if(vexRT[Btn5D] == 1){
-			motor[leftLiftMotor] = -127;
-			motor[EleftLiftMotor] = -127;
-			motor[rightLiftMotor]= 127;
-			motor[ErightLiftMotor] = 127;
+			motor[leftLiftMotor] = -40;
+			motor[EleftLiftMotor] = 40;
+			motor[rightLiftMotor]= 40;
+			motor[ErightLiftMotor] = 40;
 
-			motor[rightClaw] = 1;
-			motor[leftClaw] = -1;
+			//motor[rightClaw] = 1;
+			//motor[leftClaw] = -1;
 		}
 		else{
 			motor[leftLiftMotor] = 0;
@@ -155,8 +155,10 @@ task usercontrol()
 			motor[leftClaw] = -60;
 		}
 		else if(vexRT[Btn6D] == 1){
-			motor[rightClaw] = -40;
-			motor[leftClaw] = 40;
+			motor[rightClaw] = -30;
+			motor[leftClaw] = 30;
+		}
+		else{
 			motor[rightClaw] = 0;
 			motor[leftClaw] = 0;
 		}
@@ -164,18 +166,18 @@ task usercontrol()
 
 		forward = vexRT[Ch4];
 		strafe = vexRT[Ch3];
-		isRotationPressed = ( vexRT[Ch1] > 0 || vexRT[Ch1] < 0 );
-		clockwise = vexRT[Ch1] > 0;
+		isRotationPressed = ( vexRT[Ch1] > 10 || vexRT[Ch1] < -10 );
+		rotation = vexRT[Ch1];
 
 		if (isRotationPressed)
 		{
-			motor[frontLeft] = limitValue( (96 - (strafe / 4)) * (clockwise ? 1 : -1),
+			motor[frontLeft] = limitValue( ((rotation / 2) - (strafe / 4)) ,
 			deadzoneOuter, deadzoneInner);
-			motor[backLeft] = limitValue( (96 + (strafe / 4)) * (clockwise ? 1 : -1),
+			motor[backLeft] = limitValue( ((rotation / 2) + (strafe / 4)) ,
 			deadzoneOuter, deadzoneInner);
-			motor[frontRight] = limitValue( (96 + (forward / 4)) * (clockwise ? 1 : -1),
+			motor[frontRight] = limitValue( ((rotation / 2) + (forward / 4)) ,
 			deadzoneOuter, deadzoneInner);
-			motor[backRight] = limitValue( (96 + (forward / 4)) * (clockwise ? 1 : -1),
+			motor[backRight] = limitValue( ((rotation / 2) + (forward / 4)) ,
 			deadzoneOuter, deadzoneInner);
 		}
 		else
