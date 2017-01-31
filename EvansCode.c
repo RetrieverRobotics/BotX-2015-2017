@@ -25,6 +25,8 @@
 //Main competition background code...do not modify!
 #include "Vex_Competition_Includes.c"
 
+//#define AUTONOMOUS_TESTING
+
 /**
 * Limits the raw input value to be in the range:
 * if < -max then -max
@@ -63,12 +65,16 @@ int limitValue(int rawInput, int max, int min)
 /*  not every time that the robot is disabled.                               */
 /*---------------------------------------------------------------------------*/
 
+
+
 void pre_auton()
 {
 	// Set bStopTasksBetweenModes to false if you want to keep user created tasks
 	// running between Autonomous and Driver controlled modes. You will need to
 	// manage all user created tasks if set to false.
 	bStopTasksBetweenModes = true;
+
+	//bIfiAutonomousMode = true;
 
 	// Set bDisplayCompetitionStatusOnLcd to false if you don't want the LCD
 	// used by the competition include file, for example, you might want
@@ -77,6 +83,24 @@ void pre_auton()
 
 	// All activities that occur before the competition starts
 	// Example: clearing encoders, setting servo positions, ...
+}
+
+void autonomousMode()
+{
+
+	motor[frontLeft] = 127;
+	motor[frontRight] = 127;
+	motor[backLeft] = 127;
+	motor[backRight] = 127;
+
+	wait1Msec(2000);
+
+	motor[frontLeft] = 0;
+	motor[frontRight] = 0;
+	motor[backLeft] = 0;
+	motor[backRight] = 0;
+
+
 }
 
 /*---------------------------------------------------------------------------*/
@@ -88,16 +112,15 @@ void pre_auton()
 /*                                                                           */
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
-
 task autonomous()
 {
-	// ..........................................................................
-	// Insert user code here.
-	// ..........................................................................
-
-	// Remove this function call once you have "real" code.
-	AutonomousCodePlaceholderForTesting();
+#ifndef AUTONOMOUS_TESTING
+		autonomousMode();
+#else
+		AutonomousCodePlaceholderForTesting();
+#endif
 }
+
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
@@ -112,6 +135,10 @@ task autonomous()
 task usercontrol()
 {
 	// User control code here, inside the loop
+
+#ifdef AUTONOMOUS_TESTING
+	autonomousMode();
+#else
 
 	int forward;
 	int strafe;
@@ -172,5 +199,6 @@ task usercontrol()
 		motor[backLeft] = limitValue( forward - strafe + rotation, deadzoneOuter, deadzoneInner );
 		motor[backRight] = limitValue( forward + strafe - rotation, deadzoneOuter, deadzoneInner );
 	}
+#endif
 
 }
