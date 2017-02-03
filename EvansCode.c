@@ -85,20 +85,99 @@ void pre_auton()
 	// Example: clearing encoders, setting servo positions, ...
 }
 
+void movement(int forward, int strafe, int rotation)
+{
+
+	int deadzoneOuter = 127;
+	int deadzoneInner = 30;
+
+	motor[frontLeft] = limitValue( forward + strafe + rotation, deadzoneOuter, deadzoneInner );
+	motor[frontRight] = limitValue( forward - strafe - rotation, deadzoneOuter, deadzoneInner );
+	motor[backLeft] = limitValue( forward - strafe + rotation, deadzoneOuter, deadzoneInner );
+	motor[backRight] = limitValue( forward + strafe - rotation, deadzoneOuter, deadzoneInner );
+
+}
+
+void lift(int rise)
+{
+
+	motor[leftLiftMotor] = rise;
+	motor[EleftLiftMotor] = rise * -1;
+	motor[rightLiftMotor]= rise * -1;
+	motor[ErightLiftMotor] = rise * -1;
+
+}
+
+void claw(int chomp)
+{
+
+	motor[rightClaw] = chomp;
+	motor[leftClaw] = chomp * -1;
+
+}
+
+void throw(){
+
+	lift(127);
+
+	wait1Msec(250);
+
+	claw(-100);
+
+	wait1Msec(1000);
+
+	lift(-40);
+
+}
 void autonomousMode()
 {
 
-	motor[frontLeft] = 127;
-	motor[frontRight] = 127;
-	motor[backLeft] = 127;
-	motor[backRight] = 127;
+	claw(80);
+
+	wait1Msec(300);
+
+	movement(-127,0,0);
+
+	//2000 Msec = 6ft 1.5inch
+	wait1Msec(1900);
+
+	movement(0,0,0);
+
+	wait1Msec(500);
+
+	throw();
+
+	wait1Msec(1000);
+
+	movement(0,127,30);
+
+	wait1Msec(3200);
+
+	movement(0,0,0);
+
+	wait1Msec(500);
+
+	movement(127,0,0);
+
+	wait1Msec(1900);
+
+	claw(80);
+
+	wait1Msec(300);
+
+	movement(-127,0,0);
+
+	wait1Msec(1900);
+
+	throw();
+
+	wait1Msec(1000);
+
+	movement(0,-127,0);
 
 	wait1Msec(2000);
 
-	motor[frontLeft] = 0;
-	motor[frontRight] = 0;
-	motor[backLeft] = 0;
-	motor[backRight] = 0;
+	movement(0,0,0);
 
 
 }
@@ -114,11 +193,11 @@ void autonomousMode()
 /*---------------------------------------------------------------------------*/
 task autonomous()
 {
-#ifndef AUTONOMOUS_TESTING
-		autonomousMode();
-#else
-		AutonomousCodePlaceholderForTesting();
-#endif
+	//#ifndef AUTONOMOUS_TESTING
+	//autonomousMode();
+	//#else
+	AutonomousCodePlaceholderForTesting();
+	//#endif
 }
 
 
@@ -136,69 +215,81 @@ task usercontrol()
 {
 	// User control code here, inside the loop
 
-#ifdef AUTONOMOUS_TESTING
-	autonomousMode();
-#else
+	//#ifdef AUTONOMOUS_TESTING
+	//autonomousMode();
 
-	int forward;
-	int strafe;
-	int rotation;
 
-	int deadzoneOuter = 127;
-	int deadzoneInner = 30;
+	//#else
+
+	//int forward;
+	//int strafe;
+	//int rotation;
+
+	//int deadzoneOuter = 127;
+	//int deadzoneInner = 30;
 
 	while (true)
 	{
 
-		if(vexRT[Btn5U] == 1){
-			motor[leftLiftMotor] = 127;
-			motor[EleftLiftMotor] = -127;
-			motor[rightLiftMotor]= -127;
-			motor[ErightLiftMotor] = -127;
+		int rise = 0;
+		int chomp = 0;
 
-			motor[rightClaw] = -35;
-			motor[leftClaw] = 35;
+		if(vexRT[Btn5U] == 1){
+			//motor[leftLiftMotor] = 127;
+			//motor[EleftLiftMotor] = -127;
+			//motor[rightLiftMotor]= -127;
+			//motor[ErightLiftMotor] = -127;
+
+			rise = 127;
+
 		}
 		else if(vexRT[Btn5D] == 1){
-			motor[leftLiftMotor] = -40;
-			motor[EleftLiftMotor] = 40;
-			motor[rightLiftMotor]= 40;
-			motor[ErightLiftMotor] = 40;
+			//motor[leftLiftMotor] = -40;
+			//motor[EleftLiftMotor] = 40;
+			//motor[rightLiftMotor]= 40;
+			//motor[ErightLiftMotor] = 40;
 
-			//motor[rightClaw] = 1;
-			//motor[leftClaw] = -1;
+			rise = -40;
 		}
-		else{
-			motor[leftLiftMotor] = 0;
-			motor[rightLiftMotor]= 0;
-			motor[EleftLiftMotor] = 0;
-			motor[ErightLiftMotor] = 0;
-		}
+		//else{
+		//motor[leftLiftMotor] = 0;
+		//motor[rightLiftMotor]= 0;
+		//motor[EleftLiftMotor] = 0;
+		//motor[ErightLiftMotor] = 0;
+		//}
 
+		lift(rise);
 
 		if(vexRT[Btn6U] == 1){
-			motor[rightClaw] = 60;
-			motor[leftClaw] = -60;
+			//motor[rightClaw] = 60;
+			//motor[leftClaw] = -60;
+
+			chomp = 60;
 		}
 		else if(vexRT[Btn6D] == 1){
-			motor[rightClaw] = -30;
-			motor[leftClaw] = 30;
+			//motor[rightClaw] = -30;
+			//motor[leftClaw] = 30;
+
+			chomp = -30;
 		}
-		else{
-			motor[rightClaw] = 0;
-			motor[leftClaw] = 0;
-		}
+		//else{
+		//motor[rightClaw] = 0;
+		//motor[leftClaw] = 0;
+		//}
 
+		claw(chomp);
 
-		forward = vexRT[Ch3];
-		strafe = vexRT[Ch4];
-		rotation = vexRT[Ch1];
+		//forward = vexRT[Ch3];
+		//strafe = vexRT[Ch4];
+		//rotation = vexRT[Ch1];
 
-		motor[frontLeft] = limitValue( forward + strafe + rotation, deadzoneOuter, deadzoneInner );
-		motor[frontRight] = limitValue( forward - strafe - rotation, deadzoneOuter, deadzoneInner );
-		motor[backLeft] = limitValue( forward - strafe + rotation, deadzoneOuter, deadzoneInner );
-		motor[backRight] = limitValue( forward + strafe - rotation, deadzoneOuter, deadzoneInner );
+		movement(vexRT[Ch3],vexRT[Ch4],vexRT[Ch1]);
+
+		//motor[frontLeft] = limitValue( forward + strafe + rotation, deadzoneOuter, deadzoneInner );
+		//motor[frontRight] = limitValue( forward - strafe - rotation, deadzoneOuter, deadzoneInner );
+		//motor[backLeft] = limitValue( forward - strafe + rotation, deadzoneOuter, deadzoneInner );
+		//motor[backRight] = limitValue( forward + strafe - rotation, deadzoneOuter, deadzoneInner );
 	}
-#endif
+	//#endif
 
 }
