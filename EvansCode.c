@@ -25,6 +25,22 @@
 //Main competition background code...do not modify!
 #include "Vex_Competition_Includes.c"
 
+/////////////////////////////////////////////////////////////
+///   COMMENT THIS OUT TO DISABLE AUTONOMOUS TESTING      ///
+/////////////////////////////////////////////////////////////
+//#define AUTONOMOUS_TESTING
+
+struct UserInput
+{
+	int forwardStick;
+	int strafeStick;
+	int rotateStick;
+	bool raiseArm;
+	bool lowerArm;
+	bool openClaw;
+	bool closeClaw;
+};
+
 /**
 * Limits the raw input value to be in the range:
 * if < -max then -max
@@ -53,6 +69,22 @@ int limitValue(int rawInput, int max, int min)
 	return rawInput;
 }
 
+/**
+* Checks all of the assigned bindings once
+*
+* @return The current inputs of the controller
+*/
+void GetVexControllerInputs(struct UserInput& setMe)
+{
+	setMe.forwardStick = vexRT[Ch3];
+	setMe.strafeStick = vexRT[Ch4];
+	setMe.rotateStick = vexRT[Ch1];
+	setMe.raiseArm = vexRT[Btn5U] == 1;
+	setMe.lowerArm = vexRT[Btn5D] == 1;
+	setMe.openClaw = vexRT[Btn6U] == 1;
+	setMe.closeClaw = vexRT[Btn6D] == 1;
+}
+
 /*---------------------------------------------------------------------------*/
 /*                          Pre-Autonomous Functions                         */
 /*                                                                           */
@@ -63,12 +95,16 @@ int limitValue(int rawInput, int max, int min)
 /*  not every time that the robot is disabled.                               */
 /*---------------------------------------------------------------------------*/
 
+
+
 void pre_auton()
 {
 	// Set bStopTasksBetweenModes to false if you want to keep user created tasks
 	// running between Autonomous and Driver controlled modes. You will need to
 	// manage all user created tasks if set to false.
 	bStopTasksBetweenModes = true;
+
+	//bIfiAutonomousMode = true;
 
 	// Set bDisplayCompetitionStatusOnLcd to false if you don't want the LCD
 	// used by the competition include file, for example, you might want
@@ -77,6 +113,107 @@ void pre_auton()
 
 	// All activities that occur before the competition starts
 	// Example: clearing encoders, setting servo positions, ...
+}
+
+/**
+ * Runs the drive motors according to "forward", "strafe", and "rotation"
+ * values.
+ *
+ * @param forward The speed of the robot's forward movement (opposite the throw direction: +127, toward throw direction: -127)
+ * @param strafe The speed of the robot's strafing movement (to the right of claw opening: +127, to the left: -127)
+ * @param rotation The speed of the robot's rotation (clockwise: +127, counterclockwise: -127)
+ */
+void movement(int forward, int strafe, int rotation)
+{
+	int deadzoneOuter = 127;
+	int deadzoneInner = 30;
+
+	motor[frontLeft] = limitValue( forward + strafe + rotation, deadzoneOuter, deadzoneInner );
+	motor[frontRight] = limitValue( forward - strafe - rotation, deadzoneOuter, deadzoneInner );
+	motor[backLeft] = limitValue( forward - strafe + rotation, deadzoneOuter, deadzoneInner );
+	motor[backRight] = limitValue( forward + strafe - rotation, deadzoneOuter, deadzoneInner );
+
+}
+
+void lift(int rise)
+{
+	motor[leftLiftMotor] = rise;
+	motor[EleftLiftMotor] = rise * -1;
+	motor[rightLiftMotor]= rise * -1;
+	motor[ErightLiftMotor] = rise * -1;
+}
+
+void claw(int chomp)
+{
+	motor[rightClaw] = chomp;
+	motor[leftClaw] = chomp * -1;
+}
+
+void throw()
+{
+	lift(127);
+	wait1Msec(250);
+
+	claw(-100);
+	wait1Msec(1000);
+
+	lift(-50);
+	claw(0);
+}
+
+void autonomousMode()
+{
+	claw(60);//grabs initial object
+	wait1Msec(300);
+	movement(-127,0,0);//moves backwards towards wall
+	wait1Msec(1900);
+	movement(0,0,0);
+	wait1Msec(500);
+	throw();
+	wait1Msec(1000);
+
+	movement(0,127,0);//moves right to the right most wall
+	wait1Msec(3400);
+	movement(0,0,0);
+	wait1Msec(500);
+
+	movement(127,0,0);//moves forward to grab new object
+	wait1Msec(1900);
+	movement(0,0,0);
+	wait1Msec(500);
+	claw(60);//grabs second object
+	wait1Msec(500);
+
+	movement(-127,0,0);//moves backwards to the wall to throw object
+	wait1Msec(1900);
+	movement(0,0,0);
+	wait1Msec(500);
+	throw();//throws the second object
+	wait1Msec(1000);
+
+	movement(0,-127,0);//moves to the center of the field
+	wait1Msec(2000);
+	movement(0,0,0);
+	wait1Msec(500);
+
+	movement(127,0,0);//begins moving towards last object
+	wait1Msec(1900);
+	movement(0,0,0);
+	wait1Msec(500);
+	claw(60);//grabs the last object
+	wait1Msec(300);
+
+	movement(-127,0,0);//moves backwards to throw the last object
+	wait1Msec(1900);
+	movement(0,0,0);
+	wait1Msec(500);
+	throw();//throws the last object
+	wait1Msec(1000);
+
+	lift(0);//shutdown the claw and lift
+	claw(0);
+
+	wait1Msec(1000); // Wait till the end of autonomous
 }
 
 /*---------------------------------------------------------------------------*/
@@ -88,16 +225,21 @@ void pre_auton()
 /*                                                                           */
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
-
 task autonomous()
 {
-	// ..........................................................................
-	// Insert user code here.
-	// ..........................................................................
+	#ifndef AUTONOMOUS_TESTING
 
-	// Remove this function call once you have "real" code.
+	// Run autonomous code if we're not testing it from user control
+	autonomousMode();
+
+	#else
+
+	// Do nothing if we're testing from user control
 	AutonomousCodePlaceholderForTesting();
+
+	#endif
 }
+
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
@@ -111,66 +253,48 @@ task autonomous()
 
 task usercontrol()
 {
-	// User control code here, inside the loop
 
-	int forward;
-	int strafe;
-	int rotation;
+	#ifdef AUTONOMOUS_TESTING
 
-	int deadzoneOuter = 127;
-	int deadzoneInner = 30;
+	// Only run autonomous code if we're in autonomous testing mode
+	autonomousMode();
+
+	#else
+
+	// User control code runs if AUTONOMOUS_TESTING is not defined
+	struct UserInput controllerInputs;
 
 	while (true)
 	{
+		GetVexControllerInputs(controllerInputs);
 
-		if(vexRT[Btn5U] == 1){
-			motor[leftLiftMotor] = 127;
-			motor[EleftLiftMotor] = -127;
-			motor[rightLiftMotor]= -127;
-			motor[ErightLiftMotor] = -127;
+		int rise = 0;
+		int chomp = 0;
 
-			motor[rightClaw] = -35;
-			motor[leftClaw] = 35;
+		if (controllerInputs.raiseArm)
+		{
+			rise = 127;
 		}
-		else if(vexRT[Btn5D] == 1){
-			motor[leftLiftMotor] = -40;
-			motor[EleftLiftMotor] = 40;
-			motor[rightLiftMotor]= 40;
-			motor[ErightLiftMotor] = 40;
-
-			//motor[rightClaw] = 1;
-			//motor[leftClaw] = -1;
-		}
-		else{
-			motor[leftLiftMotor] = 0;
-			motor[rightLiftMotor]= 0;
-			motor[EleftLiftMotor] = 0;
-			motor[ErightLiftMotor] = 0;
+		else if (controllerInputs.lowerArm)
+		{
+			rise = -40;
 		}
 
+		lift(rise);
 
-		if(vexRT[Btn6U] == 1){
-			motor[rightClaw] = 60;
-			motor[leftClaw] = -60;
+		if (controllerInputs.openClaw)
+		{
+			chomp = 60;
 		}
-		else if(vexRT[Btn6D] == 1){
-			motor[rightClaw] = -30;
-			motor[leftClaw] = 30;
-		}
-		else{
-			motor[rightClaw] = 0;
-			motor[leftClaw] = 0;
+		else if (controllerInputs.closeClaw)
+		{
+			chomp = -30;
 		}
 
+		claw(chomp);
 
-		forward = vexRT[Ch3];
-		strafe = vexRT[Ch4];
-		rotation = vexRT[Ch1];
-
-		motor[frontLeft] = limitValue( forward + strafe + rotation, deadzoneOuter, deadzoneInner );
-		motor[frontRight] = limitValue( forward - strafe - rotation, deadzoneOuter, deadzoneInner );
-		motor[backLeft] = limitValue( forward - strafe + rotation, deadzoneOuter, deadzoneInner );
-		motor[backRight] = limitValue( forward + strafe - rotation, deadzoneOuter, deadzoneInner );
+		movement(controllerInputs.forwardStick, controllerInputs.strafeStick, controllerInputs.rotateStick);
 	}
+	#endif
 
 }
